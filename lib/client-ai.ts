@@ -22,10 +22,7 @@ export async function analyzeWithAI(
   const contextMap = {
     [UserProfile.VEGAN]: 'strict vegan (no animal products)',
     [UserProfile.DIABETIC]: 'diabetic (low sugar, low glycemic index)',
-    [UserProfile.KETO]: 'ketogenic diet (very low carb, high fat)',
-    [UserProfile.GLUTEN_FREE]: 'gluten-free (no wheat, barley, rye)',
-    [UserProfile.NUT_ALLERGY]: 'severe nut allergy (no tree nuts or peanuts)',
-    [UserProfile.CLEAN_EATING]: 'clean eating (minimal processing, no artificial ingredients)',
+    [UserProfile.PALEO]: 'paleo diet (no grains, legumes, or dairy)',
   };
 
   const userContext = contextMap[profile];

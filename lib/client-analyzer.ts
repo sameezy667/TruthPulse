@@ -3,8 +3,8 @@
  * Uses only local OpenFoodFacts database
  */
 
-import { analyzeProduct } from './product-analyzer';
-import { findProductByBarcode } from './openfoodfacts-db';
+import { analyzeProductLocally } from './product-analyzer';
+import { getProductByBarcode } from './openfoodfacts-db';
 import { UserProfile } from './types';
 
 export async function analyzeClientSide(
@@ -14,9 +14,9 @@ export async function analyzeClientSide(
 ): Promise<any> {
   // If barcode provided, try database lookup
   if (barcode) {
-    const product = findProductByBarcode(barcode);
+    const product = getProductByBarcode(barcode);
     if (product) {
-      return analyzeProduct(product, profile);
+      return analyzeProductLocally(product, profile);
     }
   }
 
