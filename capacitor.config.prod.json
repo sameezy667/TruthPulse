@@ -1,0 +1,16 @@
+{
+  "appId": "com.sachai.app",
+  "appName": "Sach.ai",
+  "webDir": ".next",
+  "server": {
+    "url": "https://YOUR-APP.vercel.app",
+    "cleartext": false
+  },
+  "bundledWebRuntime": false,
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera", "photos"]
+    },
+    "Haptics": {}
+  }
+}

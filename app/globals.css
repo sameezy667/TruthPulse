@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  .score-gradient {
+    background: linear-gradient(
+      to right,
+      #00ff94 0%,
+      #00ff94 33%,
+      #fbbf24 33%,
+      #fbbf24 66%,
+      #ff4444 66%,
+      #ff4444 100%
+    );
+  }
+
+  .tracking-tight-custom {
+    letter-spacing: -0.025em;
+  }
+
+  .tracking-widest-custom {
+    letter-spacing: 0.3em;
+  }
+}

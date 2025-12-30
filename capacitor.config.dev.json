@@ -1,0 +1,16 @@
+{
+  "appId": "com.sachai.app",
+  "appName": "Sach.ai",
+  "webDir": ".next",
+  "server": {
+    "url": "http://192.168.29.10:3002",
+    "cleartext": true
+  },
+  "bundledWebRuntime": false,
+  "plugins": {
+    "Camera": {
+      "permissions": ["camera", "photos"]
+    },
+    "Haptics": {}
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Sach.ai",
+  "description": "A context-aware food scanner that utilizes Gemini AI to analyze food labels based on user-specific health profiles, featuring a dark futuristic interface.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
