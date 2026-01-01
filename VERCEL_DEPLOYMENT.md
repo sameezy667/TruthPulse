@@ -26,7 +26,7 @@
    ```bash
    vercel env add GOOGLE_GENERATIVE_AI_API_KEY
    ```
-   - Paste your API key: `AIzaSyB6ELAbt2GFOWPFLSc7bpluoZEQfNH47CU`
+   - Paste your API key: `your_api_key_here`
    - Select "Production"
 
 5. **Redeploy with env var:**
@@ -52,7 +52,7 @@
 4. **Add Environment Variable:**
    - Click "Environment Variables"
    - Name: `GOOGLE_GENERATIVE_AI_API_KEY`
-   - Value: `AIzaSyB6ELAbt2GFOWPFLSc7bpluoZEQfNH47CU`
+   - Value: `your_api_key_here`
    - Select: **Production**, **Preview**, **Development**
 
 5. **Deploy:**

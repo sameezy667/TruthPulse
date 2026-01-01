@@ -5,6 +5,7 @@ import { AnalyzeRequestSchema, AIResponseSchema } from '@/lib/schemas';
 import { generateSystemPrompt } from '@/lib/prompts';
 import { getProductByBarcode } from '@/lib/openfoodfacts-db';
 import { analyzeProductLocally } from '@/lib/product-analyzer';
+import { extractProductInfo } from '@/lib/ocr';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,8 +51,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Optional: Use OCR for faster text extraction (can be used alongside AI)
+    // This is useful for extracting ingredients and nutrition facts quickly
+    const useOCR = (body as any).useOCR === true;
+    let ocrData: { fullText: string; ingredients?: string; nutritionFacts?: string[]; confidence: number } | null = null;
+    
+    if (useOCR) {
+      try {
+        console.log('Extracting text with OCR...');
+        ocrData = await extractProductInfo(imageBase64);
+        console.log('OCR extraction complete:', {
+          textLength: ocrData.fullText.length,
+          confidence: ocrData.confidence,
+          hasIngredients: !!ocrData.ingredients,
+          nutritionFactsCount: ocrData.nutritionFacts?.length || 0
+        });
+      } catch (ocrError) {
+        console.warn('OCR extraction failed, continuing with AI only:', ocrError);
+      }
+    }
+
     // Generate system prompt based on profile
-    const systemPrompt = generateSystemPrompt(userProfile);
+    let systemPrompt = generateSystemPrompt(userProfile);
+    
+    // If OCR data is available, include it in the prompt for better analysis
+    if (ocrData && ocrData.confidence > 60) {
+      systemPrompt += `\n\nOCR-extracted text from the image (confidence: ${ocrData.confidence.toFixed(1)}%):\n${ocrData.fullText}`;
+      if (ocrData.ingredients) {
+        systemPrompt += `\n\nDetected ingredients: ${ocrData.ingredients}`;
+      }
+      if (ocrData.nutritionFacts && ocrData.nutritionFacts.length > 0) {
+        systemPrompt += `\n\nDetected nutrition facts:\n${ocrData.nutritionFacts.join('\n')}`;
+      }
+    }
 
     // Prepare the image data
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');

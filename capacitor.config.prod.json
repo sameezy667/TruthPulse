@@ -3,7 +3,7 @@
   "appName": "Sach.ai",
   "webDir": ".next",
   "server": {
-    "url": "https://YOUR-APP.vercel.app",
+    "url": "https://truth-pulse-seven.vercel.app",
     "cleartext": false
   },
   "bundledWebRuntime": false,

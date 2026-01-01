@@ -59,7 +59,7 @@
 ### 1. Environment Variables
 Ensure `.env.local` exists with:
 ```
-GEMINI_API_KEY=AIzaSyB6ELAbt2GFOWPFLSc7bpluoZEQfNH47CU
+GOOGLE_GENERATIVE_AI_API_KEY=your_api_key_here
 ```
 
 ### 2. Install Dependencies

@@ -15,6 +15,9 @@ node_modules
 .env.development.local
 .env.test.local
 .env.production.local
+.env
+*.env
+!.env.example
 dist
 .vite
 dist-ssr
@@ -51,3 +54,9 @@ ios/App/App.xcworkspace/xcuserdata
 
 # TypeScript
 *.tsbuildinfo
+
+# Documentation with sensitive data
+*_GUIDE.md
+*_DEPLOYMENT.md
+DEPLOYMENT_GUIDE.md
+VERCEL_DEPLOYMENT.md
