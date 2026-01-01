@@ -279,13 +279,6 @@ function HomeContent() {
 
   return (
     <div className="relative w-full h-screen bg-[#0A0A0A] overflow-hidden flex flex-col">
-      {/* Dynamic Island / Status Bar */}
-      <div className="absolute top-0 left-0 right-0 h-10 z-50 flex justify-center items-center pointer-events-none pt-safe">
-        <div className="w-28 h-6 bg-black rounded-full mt-2 flex items-center justify-center">
-          <div className="w-1 h-1 rounded-full bg-zinc-800 ml-auto mr-4" />
-        </div>
-      </div>
-
       {/* Memory Indicator - Show when user has history and is on scanner or analyzing */}
       {userHistory && (step === AppStep.SCANNER || step === AppStep.ANALYZING) && (
         <MemoryIndicator history={userHistory} />
