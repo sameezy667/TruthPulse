@@ -29,15 +29,15 @@ describe('Property-Based System Prompt Completeness', () => {
         (userProfile) => {
           const systemPrompt = generateSystemPrompt(userProfile);
           
-          // Should contain "Key Concerns:" section
-          expect(systemPrompt).toContain('Key Concerns:');
+          // Should contain "Primary Concerns:" section
+          expect(systemPrompt).toContain('Primary Concerns:');
           
           // Should contain profile-specific concerns
           if (userProfile === UserProfile.DIABETIC) {
-            expect(systemPrompt).toContain('sugar content');
+            expect(systemPrompt).toContain('blood sugar');
             expect(systemPrompt).toContain('glycemic index');
           } else if (userProfile === UserProfile.VEGAN) {
-            expect(systemPrompt).toContain('animal derivatives');
+            expect(systemPrompt).toContain('animal-derived');
           } else if (userProfile === UserProfile.PALEO) {
             expect(systemPrompt).toContain('grains');
             expect(systemPrompt).toContain('legumes');
@@ -60,12 +60,12 @@ describe('Property-Based System Prompt Completeness', () => {
           
           // Should contain profile-specific safe ingredients
           if (userProfile === UserProfile.DIABETIC) {
-            expect(systemPrompt).toContain('low sugar');
-            expect(systemPrompt).toContain('high protein');
+            expect(systemPrompt).toContain('whole grains');
+            expect(systemPrompt).toContain('lean proteins');
           } else if (userProfile === UserProfile.VEGAN) {
             expect(systemPrompt).toContain('plant-based');
           } else if (userProfile === UserProfile.PALEO) {
-            expect(systemPrompt).toContain('whole foods');
+            expect(systemPrompt).toContain('vegetables');
             expect(systemPrompt).toContain('nuts');
           }
         }
@@ -86,10 +86,11 @@ describe('Property-Based System Prompt Completeness', () => {
           
           // Should contain profile-specific risky ingredients
           if (userProfile === UserProfile.DIABETIC) {
-            expect(systemPrompt).toContain('high sugar');
-            expect(systemPrompt).toContain('refined carbs');
+            expect(systemPrompt).toContain('refined sugars');
+            expect(systemPrompt).toContain('high-carb');
           } else if (userProfile === UserProfile.VEGAN) {
-            expect(systemPrompt).toContain('animal products');
+            expect(systemPrompt).toContain('dairy');
+            expect(systemPrompt).toContain('eggs');
           } else if (userProfile === UserProfile.PALEO) {
             expect(systemPrompt).toContain('grains');
             expect(systemPrompt).toContain('legumes');
@@ -108,10 +109,10 @@ describe('Property-Based System Prompt Completeness', () => {
           const systemPrompt = generateSystemPrompt(userProfile);
           
           // Should contain all four scenario types
-          expect(systemPrompt).toContain('SCENARIO A');
-          expect(systemPrompt).toContain('SCENARIO B');
-          expect(systemPrompt).toContain('SCENARIO C');
-          expect(systemPrompt).toContain('SCENARIO D');
+          expect(systemPrompt).toContain('Scenario A');
+          expect(systemPrompt).toContain('Scenario B');
+          expect(systemPrompt).toContain('Scenario C');
+          expect(systemPrompt).toContain('Scenario D');
           
           // Should contain the response type names
           expect(systemPrompt).toContain('SAFE');

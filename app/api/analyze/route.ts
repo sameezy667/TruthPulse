@@ -1,11 +1,13 @@
 import { NextRequest } from 'next/server';
 import { google } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { streamText, generateObject, Output } from 'ai';
 import { AnalyzeRequestSchema, AIResponseSchema } from '@/lib/schemas';
 import { generateSystemPrompt } from '@/lib/prompts';
 import { getProductByBarcode } from '@/lib/openfoodfacts-db';
 import { analyzeProductLocally } from '@/lib/product-analyzer';
 import { extractProductInfo } from '@/lib/ocr';
+import { generateUISync } from '@/lib/generative-ui-engine';
+import { UserProfile } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,13 +41,27 @@ export async function POST(request: NextRequest) {
         console.log('Product found in local database:', product.name);
         const analysis = analyzeProductLocally(product, userProfile);
         
-        return new Response(
-          JSON.stringify(analysis),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
+        // Generate UI components for local analysis
+        try {
+          const uiComponents = await generateUISync(analysis, userProfile);
+          return new Response(
+            JSON.stringify({ ...analysis, uiComponents }),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+        } catch (uiError) {
+          console.error('UI generation failed for local analysis:', uiError);
+          // Return analysis without UI components
+          return new Response(
+            JSON.stringify(analysis),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+        }
       } else {
         console.log('Barcode not found in local database, falling back to AI');
       }
@@ -90,67 +106,67 @@ export async function POST(request: NextRequest) {
     
     console.log('Calling Gemini API...');
     
-    // Use generateText (blocking) since streamObject doesn't work with Gemini's schema constraints
-    const result = await generateText({
-      model: google('gemini-2.5-flash-lite'),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: systemPrompt + '\n\nIMPORTANT: Return ONLY valid JSON matching one of the four scenarios. No markdown, no code blocks, just raw JSON.',
-            },
-            {
-              type: 'image',
-              image: base64Data,
-            },
-          ],
-        },
-      ],
-    });
-
-    console.log('Gemini response:', result.text);
-
-    // Parse and validate the JSON response
+    // Use generateObject for reliable analysis
     try {
-      // Remove markdown code blocks if present
-      let jsonText = result.text.trim();
-      const jsonMatch = jsonText.match(/```json\s*([\s\S]*?)\s*```/) || jsonText.match(/```\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        jsonText = jsonMatch[1].trim();
-      }
+      const { object: analysis } = await generateObject({
+        model: google('gemini-2.5-flash-lite'),
+        schema: AIResponseSchema,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: systemPrompt,
+              },
+              {
+                type: 'image',
+                image: base64Data,
+              },
+            ],
+          },
+        ],
+      });
       
-      // Try to extract JSON object
-      const objectMatch = jsonText.match(/\{[\s\S]*\}/);
-      if (objectMatch) {
-        jsonText = objectMatch[0];
-      }
-
-      const parsed = JSON.parse(jsonText);
-      const validated = AIResponseSchema.parse(parsed);
+      console.log('Analysis complete:', analysis.type);
       
-      console.log('Validated response:', validated);
-      
+      // Return analysis as JSON
       return new Response(
-        JSON.stringify(validated),
+        JSON.stringify(analysis),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
         }
       );
-    } catch (parseError) {
-      console.error('Failed to parse JSON:', parseError);
-      console.error('Raw text:', result.text);
+    } catch (aiError) {
+      console.error('AI generation error:', aiError);
       
+      // Check if it's a quota/rate limit error
+      const errorMessage = aiError instanceof Error ? aiError.message : '';
+      const isQuotaError = errorMessage.includes('quota') || errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('429');
+      
+      if (isQuotaError) {
+        return new Response(
+          JSON.stringify({
+            type: 'UNCERTAIN',
+            rawText: '⏱️ API Rate Limit Reached\n\nYou\'ve reached the free tier limit (20 requests/day) for the Gemini API.\n\nOptions:\n• Wait ~10 minutes and try again\n• Use a different API key\n• Upgrade to a paid plan\n\nFor demo purposes, you can use previously analyzed products or test with the barcode scanner feature.'
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
+      // Return UNCERTAIN response if AI fails
       return new Response(
         JSON.stringify({
           type: 'UNCERTAIN',
-          rawText: 'Unable to parse AI response. Please try again.'
+          rawText: 'Unable to analyze this product. The image may be unclear or the label is not readable. Please try:\n\n• Taking a clearer photo with better lighting\n• Focusing on the ingredients label\n• Ensuring the text is readable'
         }),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
         }
       );
     }

@@ -24,6 +24,7 @@ const config: Config = {
       },
       spacing: {
         safe: 'env(safe-area-inset-top)',
+        'safe-top': 'env(safe-area-inset-top)',
         'safe-bottom': 'env(safe-area-inset-bottom)',
       },
       fontFamily: {

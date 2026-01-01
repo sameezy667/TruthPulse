@@ -8,9 +8,13 @@ import BarcodeScanner from './BarcodeScanner';
 
 interface CameraViewProps {
   onScan: (imageBase64: string, barcode?: string) => Promise<void>;
+  comparisonMode?: boolean;
+  onShowHistory?: () => void;
+  hasHistory?: boolean;
+  onBack?: () => void;
 }
 
-export default function CameraView({ onScan }: CameraViewProps) {
+export default function CameraView({ onScan, comparisonMode = false, onShowHistory, hasHistory = false, onBack }: CameraViewProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [isCapacitor, setIsCapacitor] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -88,6 +92,41 @@ export default function CameraView({ onScan }: CameraViewProps) {
         exit={{ opacity: 0 }}
         className="flex flex-col h-full bg-gradient-to-b from-emerald-950/50 via-black to-black"
       >
+      {/* Back to Home Button */}
+      {onBack && (
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={onBack}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="absolute top-6 left-6 z-30 w-10 h-10 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 
+                   flex items-center justify-center hover:bg-white/10 transition-all"
+        >
+          <span className="text-white text-xl">←</span>
+        </motion.button>
+      )}
+
+      {/* Comparison Mode Banner */}
+      {comparisonMode && (
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="absolute top-0 left-0 right-0 z-20 bg-purple-500/20 backdrop-blur-xl border-b border-purple-500/30 p-4 pt-safe-top"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 3H5C3.89543 3 3 3.89543 3 5V9M9 21H5C3.89543 21 3 20.1046 3 19V15M15 3H19C20.1046 3 21 3.89543 21 5V9M15 21H19C20.1046 21 21 20.1046 21 19V15" stroke="#C084FC" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M12 8V16M8 12H16" stroke="#C084FC" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <div className="text-center">
+              <div className="text-purple-400 font-bold text-sm">Comparison Mode</div>
+              <div className="text-purple-300/70 text-xs">Scan second product to compare</div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      
       {/* Camera Viewfinder */}
       <div className="flex-1 flex items-center justify-center relative overflow-hidden">
         {/* Scanning Grid Overlay */}
@@ -170,7 +209,7 @@ export default function CameraView({ onScan }: CameraViewProps) {
       </div>
 
       {/* Bottom Instructions & Capture Button */}
-      <div className="p-6 pb-14 text-center space-y-4">
+      <div className="p-6 pb-8 text-center space-y-4">
         <motion.div
           animate={{
             opacity: isScanning ? [1, 0.5, 1] : 1,
@@ -249,6 +288,24 @@ export default function CameraView({ onScan }: CameraViewProps) {
           <Barcode className="w-5 h-5" />
           Scan Barcode
         </motion.button>
+
+        {/* Scan History Button */}
+        {hasHistory && onShowHistory && (
+          <motion.button
+            onClick={onShowHistory}
+            disabled={isScanning}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-zinc-400 font-semibold text-sm h-10 
+                     flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed
+                     hover:bg-white/10 transition-all"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 4H14M2 8H14M2 12H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Scan History
+          </motion.button>
+        )}
       </div>
     </motion.div>
     </>

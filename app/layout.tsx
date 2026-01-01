@@ -4,9 +4,13 @@ import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TruthLens AI - Food Scanner',
-  description: 'AI-Native food analyzer for EnCode 2026 Hackathon',
+  title: 'Sach.ai - AI Food Scanner',
+  description: 'Your AI co-pilot for food decisions. Scan products and get instant analysis.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export const viewport: Viewport = {

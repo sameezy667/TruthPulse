@@ -17,24 +17,24 @@ export default function ResultCard({ analysis, onReset, onDecision }: ResultCard
   return (
     <AnimatePresence mode="wait">
       {analysis.type === 'SAFE' && (
-        <SafeCard key="safe" data={analysis} onReset={onReset} />
+        <SafeCard key="safe" data={analysis as AIResponse & { type: 'SAFE' }} onReset={onReset} />
       )}
       
       {analysis.type === 'RISK' && (
-        <RiskHierarchy key="risk" data={analysis} onReset={onReset} />
+        <RiskHierarchy key="risk" data={analysis as AIResponse & { type: 'RISK' }} onReset={onReset} />
       )}
       
       {analysis.type === 'DECISION' && onDecision && (
         <DecisionFork 
           key="decision" 
-          data={analysis} 
+          data={analysis as AIResponse & { type: 'DECISION' }} 
           onDecision={onDecision}
           onReset={onReset} 
         />
       )}
       
       {analysis.type === 'UNCERTAIN' && (
-        <UncertainCard key="uncertain" data={analysis} onReset={onReset} />
+        <UncertainCard key="uncertain" data={analysis as AIResponse & { type: 'UNCERTAIN' }} onReset={onReset} />
       )}
     </AnimatePresence>
   );

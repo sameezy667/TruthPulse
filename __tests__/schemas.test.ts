@@ -4,6 +4,7 @@ import {
   SafeResponseSchema,
   RiskResponseSchema,
   DecisionResponseSchema,
+  ClarificationResponseSchema,
   UncertainResponseSchema,
   RiskItemSchema,
 } from '@/lib/schemas';
@@ -146,6 +147,58 @@ describe('Schema Validation', () => {
     });
   });
 
+  describe('ClarificationResponseSchema', () => {
+    it('should validate a correct CLARIFICATION response', () => {
+      const validClarification = {
+        type: 'CLARIFICATION',
+        question: 'Are you avoiding gluten?',
+        context: 'I noticed this product is gluten-free',
+        options: ['Yes, I avoid gluten', 'No, gluten is fine'],
+        inferredIntent: ['gluten-free', 'celiac'],
+      };
+
+      const result = ClarificationResponseSchema.safeParse(validClarification);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject CLARIFICATION response with missing question', () => {
+      const invalidClarification = {
+        type: 'CLARIFICATION',
+        context: 'Some context',
+        options: ['Yes', 'No'],
+        inferredIntent: [],
+      };
+
+      const result = ClarificationResponseSchema.safeParse(invalidClarification);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject CLARIFICATION response with missing context', () => {
+      const invalidClarification = {
+        type: 'CLARIFICATION',
+        question: 'Are you avoiding gluten?',
+        options: ['Yes', 'No'],
+        inferredIntent: [],
+      };
+
+      const result = ClarificationResponseSchema.safeParse(invalidClarification);
+      expect(result.success).toBe(false);
+    });
+
+    it('should validate CLARIFICATION response with empty inferredIntent', () => {
+      const validClarification = {
+        type: 'CLARIFICATION',
+        question: 'What are your dietary preferences?',
+        context: 'I need more information to analyze this product',
+        options: ['Vegan', 'Vegetarian', 'No restrictions'],
+        inferredIntent: [],
+      };
+
+      const result = ClarificationResponseSchema.safeParse(validClarification);
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('UncertainResponseSchema', () => {
     it('should validate a correct UNCERTAIN response', () => {
       const validUncertain = {
@@ -213,6 +266,22 @@ describe('Schema Validation', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data.type).toBe('DECISION');
+      }
+    });
+
+    it('should validate CLARIFICATION response through discriminated union', () => {
+      const clarificationResponse = {
+        type: 'CLARIFICATION',
+        question: 'Are you avoiding dairy?',
+        context: 'This product contains milk',
+        options: ['Yes, I avoid dairy', 'No, dairy is fine'],
+        inferredIntent: ['lactose-intolerant', 'dairy-free'],
+      };
+
+      const result = AIResponseSchema.safeParse(clarificationResponse);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.type).toBe('CLARIFICATION');
       }
     });
 

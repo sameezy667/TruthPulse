@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HelpCircle, ArrowRight } from 'lucide-react';
 import type { DecisionResponse } from '@/lib/schemas';
@@ -12,6 +13,17 @@ interface DecisionForkProps {
 }
 
 export default function DecisionFork({ data, onDecision, onReset }: DecisionForkProps) {
+  const [showHelperText, setShowHelperText] = useState(true);
+
+  // Auto-hide helper text after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowHelperText(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -43,7 +55,7 @@ export default function DecisionFork({ data, onDecision, onReset }: DecisionFork
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          className="relative"
+          className="relative will-change-transform"
         >
           <motion.div
             animate={{
@@ -55,7 +67,7 @@ export default function DecisionFork({ data, onDecision, onReset }: DecisionFork
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className="absolute inset-0 rounded-full bg-amber-500 blur-3xl"
+            className="absolute inset-0 rounded-full bg-amber-500 blur-3xl will-change-opacity"
           />
           
           <div className="relative w-24 h-24 rounded-full bg-amber-500/20 backdrop-blur-xl border-2 border-amber-500/40 
@@ -72,8 +84,14 @@ export default function DecisionFork({ data, onDecision, onReset }: DecisionFork
           className="text-center space-y-4 max-w-md px-4"
         >
           <div className="px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/30 backdrop-blur-xl inline-block">
-            <span className="text-amber-400 text-xs font-bold uppercase tracking-widest">
-              🤔 Ambiguous Ingredient
+            <span className="text-amber-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M5 6.5C5 6.5 6 5.5 7 5.5C8 5.5 9 6.5 9 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M11 6.5C11 6.5 12 5.5 13 5.5C14 5.5 15 6.5 15 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M6 10C6 10 7 11 8 11C9 11 10 10 10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              Ambiguous Ingredient
             </span>
           </div>
 
@@ -162,14 +180,17 @@ export default function DecisionFork({ data, onDecision, onReset }: DecisionFork
         </motion.div>
 
         {/* Helper Text */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-center text-xs text-zinc-600 max-w-xs"
-        >
-          Your choice will update your profile preferences for future scans
-        </motion.div>
+        {showHelperText && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-center text-xs text-zinc-600 max-w-xs"
+          >
+            Your choice will update your profile preferences for future scans
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );

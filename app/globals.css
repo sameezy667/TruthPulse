@@ -47,4 +47,32 @@
   .tracking-widest-custom {
     letter-spacing: 0.3em;
   }
+
+  /* Performance optimizations for animations */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  /* Smooth scrolling */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Text overflow handling */
+  .text-overflow-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Word break for long words */
+  .break-word {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 }
