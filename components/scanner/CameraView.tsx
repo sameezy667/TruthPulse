@@ -4,17 +4,15 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Sparkles, Upload, Barcode } from 'lucide-react';
 import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
-import BarcodeScanner from './BarcodeScanner';
+import { NativeBarcodeScanner } from './NativeBarcodeScanner';
 
 interface CameraViewProps {
   onScan: (imageBase64: string, barcode?: string) => Promise<void>;
   comparisonMode?: boolean;
-  onShowHistory?: () => void;
-  hasHistory?: boolean;
   onBack?: () => void;
 }
 
-export default function CameraView({ onScan, comparisonMode = false, onShowHistory, hasHistory = false, onBack }: CameraViewProps) {
+export default function CameraView({ onScan, comparisonMode = false, onBack }: CameraViewProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [isCapacitor, setIsCapacitor] = useState(false);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -79,9 +77,10 @@ export default function CameraView({ onScan, comparisonMode = false, onShowHisto
     <>
       <AnimatePresence>
         {showBarcodeScanner && (
-          <BarcodeScanner
+          <NativeBarcodeScanner
             onBarcodeDetected={handleBarcodeDetected}
-            onClose={() => setShowBarcodeScanner(false)}
+            onCancel={() => setShowBarcodeScanner(false)}
+            isOpen={showBarcodeScanner}
           />
         )}
       </AnimatePresence>
@@ -288,24 +287,6 @@ export default function CameraView({ onScan, comparisonMode = false, onShowHisto
           <Barcode className="w-5 h-5" />
           Scan Barcode
         </motion.button>
-
-        {/* Scan History Button */}
-        {hasHistory && onShowHistory && (
-          <motion.button
-            onClick={onShowHistory}
-            disabled={isScanning}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-zinc-400 font-semibold text-sm h-10 
-                     flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed
-                     hover:bg-white/10 transition-all"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 4H14M2 8H14M2 12H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            Scan History
-          </motion.button>
-        )}
       </div>
     </motion.div>
     </>

@@ -11,6 +11,9 @@
     "Camera": {
       "permissions": ["camera", "photos"]
     },
-    "Haptics": {}
+    "Haptics": {},
+    "TesseractPlugin": {
+      "package": "com.truthpulse.plugins.TesseractPlugin"
+    }
   }
 }

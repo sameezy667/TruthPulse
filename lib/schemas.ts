@@ -1,18 +1,27 @@
 import { z } from 'zod';
 import { UserProfile } from './types';
 
-// API Request Schema
-export const AnalyzeRequestSchema = z.object({
-  imageBase64: z.string().min(1, 'Image data is required'),
+// OCR Configuration
+export const DEFAULT_OCR_CONFIDENCE_THRESHOLD = 0;
+
+// Text-based Analysis Request Schema (server-only endpoint)
+export const AnalyzeTextRequestSchema = z.object({
+  rawText: z.string().min(1, 'Extracted text is required'),
   userProfile: z.nativeEnum(UserProfile),
+  barcode: z.string().optional(),
+  ocrConfidence: z.number().min(0).max(100).optional(),
 });
 
-export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
+export type AnalyzeTextRequest = z.infer<typeof AnalyzeTextRequestSchema>;
 
 // Risk Hierarchy Item
 export const RiskItemSchema = z.object({
   ingredient: z.string(),
-  severity: z.enum(['high', 'med']),
+  severity: z.enum(['high', 'med', 'medium', 'low']).transform(val => {
+    // Normalize "medium" to "med" for consistency
+    if (val === 'medium') return 'med';
+    return val as 'high' | 'med' | 'low';
+  }),
   reason: z.string(),
   confidence: z.number().min(0).max(1).optional(), // AI confidence score
 });
@@ -37,13 +46,6 @@ export const RiskResponseSchema = z.object({
   headline: z.string(),
   riskHierarchy: z.array(RiskItemSchema),
   alternatives: z.array(AlternativeSchema).optional(),
-});
-
-// Scenario C: Decision Fork
-export const DecisionResponseSchema = z.object({
-  type: z.literal('DECISION'),
-  question: z.string(),
-  options: z.array(z.string()),
 });
 
 // Scenario D: Clarification
@@ -74,7 +76,7 @@ export const UIComponentSchema: z.ZodType<any> = z.lazy(() =>
 // Simplified schema for Gemini compatibility
 // Single object with type discriminator and optional fields
 export const AIResponseSchema = z.object({
-  type: z.enum(['SAFE', 'RISK', 'DECISION', 'CLARIFICATION', 'UNCERTAIN']),
+  type: z.enum(['SAFE', 'RISK', 'CLARIFICATION', 'UNCERTAIN']),
   // SAFE fields
   summary: z.string().optional(),
   safeBadge: z.boolean().optional(),
@@ -82,9 +84,6 @@ export const AIResponseSchema = z.object({
   headline: z.string().optional(),
   riskHierarchy: z.array(RiskItemSchema).optional(),
   alternatives: z.array(AlternativeSchema).optional(),
-  // DECISION fields
-  question: z.string().optional(),
-  options: z.array(z.string()).optional(),
   // CLARIFICATION fields
   context: z.string().optional(),
   inferredIntent: z.array(z.string()).optional(),
@@ -99,6 +98,5 @@ export type SafeResponse = z.infer<typeof SafeResponseSchema>;
 export type RiskResponse = z.infer<typeof RiskResponseSchema>;
 export type RiskItem = z.infer<typeof RiskItemSchema>;
 export type Alternative = z.infer<typeof AlternativeSchema>;
-export type DecisionResponse = z.infer<typeof DecisionResponseSchema>;
 export type ClarificationResponse = z.infer<typeof ClarificationResponseSchema>;
 export type UncertainResponse = z.infer<typeof UncertainResponseSchema>;

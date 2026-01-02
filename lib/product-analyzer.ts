@@ -123,16 +123,16 @@ function analyzeVegan(product: Product): AIResponse {
     };
   }
 
-  // Check for ambiguous ingredients
+  // Check for ambiguous ingredients - treat as safe with flexible interpretation
   const ambiguousIngredients = ingredients.filter(ing =>
     /natural flavor|artificial flavor|mono and diglycerides|lecithin|vitamin d/i.test(ing)
   );
 
   if (ambiguousIngredients.length > 0) {
     return {
-      type: 'DECISION',
-      question: `${name} contains "${ambiguousIngredients[0]}" which might be animal-derived. How strict is your vegan diet?`,
-      options: ['Strict', 'Flexible'],
+      type: 'SAFE',
+      summary: `${name} contains "${ambiguousIngredients[0]}" which could be plant or animal-derived, but proceeding with flexible vegan interpretation. Likely safe for vegan diet.`,
+      safeBadge: true,
     };
   }
 

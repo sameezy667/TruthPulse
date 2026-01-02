@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   description: 'Your AI co-pilot for food decisions. Scan products and get instant analysis.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/generated-image.png',
+    apple: '/generated-image.png',
   },
 };
 

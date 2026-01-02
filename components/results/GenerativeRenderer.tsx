@@ -5,7 +5,6 @@ import type { AIResponse } from '@/lib/schemas';
 import ReasoningTerminal from '@/components/processing/ReasoningTerminal';
 import SafeCard from './SafeCard';
 import RiskHierarchy from './RiskHierarchy';
-import DecisionFork from './DecisionFork';
 import ClarificationCard from './ClarificationCard';
 import UncertainCard from './UncertainCard';
 import { UserProfile } from '@/lib/types';
@@ -13,7 +12,6 @@ import { UserProfile } from '@/lib/types';
 interface GenerativeRendererProps {
   data: DeepPartial<AIResponse>;
   onReset: () => void;
-  onDecision?: (choice: 'Strict' | 'Flexible') => void;
   onAnswer?: (answer: string) => void;
   onCompare?: () => void;
   profile?: UserProfile;
@@ -24,7 +22,6 @@ interface GenerativeRendererProps {
 export default function GenerativeRenderer({
   data,
   onReset,
-  onDecision,
   onAnswer,
   onCompare,
   profile = UserProfile.DIABETIC,
@@ -42,14 +39,6 @@ export default function GenerativeRenderer({
       return <SafeCard data={data as DeepPartial<AIResponse & { type: 'SAFE' }>} onReset={onReset} onCompare={showCompareButton ? onCompare : undefined} />;
     case 'RISK':
       return <RiskHierarchy data={data as DeepPartial<AIResponse & { type: 'RISK' }>} onReset={onReset} onCompare={showCompareButton ? onCompare : undefined} />;
-    case 'DECISION':
-      return (
-        <DecisionFork
-          data={data as DeepPartial<AIResponse & { type: 'DECISION' }>}
-          onDecision={onDecision || (() => {})}
-          onReset={onReset}
-        />
-      );
     case 'CLARIFICATION':
       return (
         <ClarificationCard

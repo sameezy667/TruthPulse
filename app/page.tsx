@@ -9,28 +9,16 @@ import SmartOnboarding from '@/components/onboarding/SmartOnboarding';
 import CameraView from '@/components/scanner/CameraView';
 import GenerativeRenderer from '@/components/results/GenerativeRenderer';
 import ComparisonView from '@/components/results/ComparisonView';
-import HistoryTimeline from '@/components/history/HistoryTimeline';
 import Toast from '@/components/ui/Toast';
-import MemoryIndicator from '@/components/ui/MemoryIndicator';
 import ProfileSelector from '@/components/ui/ProfileSelector';
-import { 
-  loadUserHistory, 
-  saveUserHistory, 
-  initializeUserHistory,
-  learnFromDecision,
-  type UserHistory,
-  type Decision
-} from '@/lib/user-history';
-import { inferIntent, type InferredIntent } from '@/lib/intent-inference';
+import { analyzeClientSide } from '@/lib/client-analyzer';
 
 function HomeContent() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState<AppStep>(AppStep.SETUP);
   const [profile, setProfile] = useState<UserProfile>(UserProfile.VEGAN);
   const [currentImageBase64, setCurrentImageBase64] = useState<string>('');
-  const [userHistory, setUserHistory] = useState<UserHistory | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [inferredIntent, setInferredIntent] = useState<InferredIntent | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [analysisResult, setAnalysisResult] = useState<AIResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -39,33 +27,6 @@ function HomeContent() {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [firstProduct, setFirstProduct] = useState<AIResponse | null>(null);
   const [secondProduct, setSecondProduct] = useState<AIResponse | null>(null);
-  
-  // History timeline state
-  const [showHistory, setShowHistory] = useState(false);
-
-  // Load user history on mount
-  useEffect(() => {
-    const history = loadUserHistory();
-    
-    if (!history || history.scanCount === 0) {
-      // First-time user: show onboarding
-      const newHistory = initializeUserHistory();
-      setUserHistory(newHistory);
-      saveUserHistory(newHistory);
-      setShowOnboarding(true);
-      setStep(AppStep.SETUP);
-    } else {
-      // Returning user: skip directly to camera
-      setUserHistory(history);
-      setShowOnboarding(false);
-      setStep(AppStep.SCANNER);
-      
-      // Use their learned profile if available
-      if (history.preferences.dietaryProfile) {
-        setProfile(history.preferences.dietaryProfile);
-      }
-    }
-  }, []);
 
   // Persist profile from URL query params (for backward compatibility)
   useEffect(() => {
@@ -86,39 +47,12 @@ function HomeContent() {
     setIsLoading(true);
     setStep(AppStep.ANALYZING);
 
-    console.log('Inferring intent before analysis...', barcode ? `with barcode: ${barcode}` : 'with image');
+    console.log('Starting analysis...', barcode ? `with barcode: ${barcode}` : 'with image');
     
     try {
-      // Infer intent from image and history
-      const intent = await inferIntent(imageBase64, userHistory || undefined);
-      setInferredIntent(intent);
-      
-      console.log('Inferred intent:', intent);
-      
-      // Use suggested profile if confidence is high
-      if (intent.suggestedProfile && intent.confidence > 0.7) {
-        setProfile(intent.suggestedProfile);
-      }
-      
-      // Call API
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64,
-          userProfile: profile,
-          ...(barcode && { barcode }),
-        }),
-      });
+      // Perform on-device OCR + text-only server analysis
+      const result = await analyzeClientSide(imageBase64, profile, barcode);
 
-      if (!response.ok) {
-        throw new Error('Analysis failed');
-      }
-
-      const result: AIResponse = await response.json();
-      
       // Handle comparison mode
       if (comparisonMode && firstProduct) {
         // This is the second product
@@ -128,7 +62,6 @@ function HomeContent() {
         // Normal mode or first product in comparison
         setAnalysisResult(result);
       }
-      
     } catch (err) {
       console.error('Analysis failed:', err);
       setError(err instanceof Error ? err : new Error('Analysis failed'));
@@ -136,58 +69,6 @@ function HomeContent() {
         type: 'UNCERTAIN',
         rawText: 'Unable to analyze this product. Please try again.',
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDecision = async (choice: 'Strict' | 'Flexible') => {
-    if (!analysisResult || analysisResult.type !== 'DECISION') return;
-
-    setError(null);
-    setIsLoading(true);
-
-    console.log('Submitting decision to /api/analyze...');
-    
-    // Learn from decision
-    if (userHistory) {
-      const decision: Decision = {
-        productType: 'unknown',
-        choice: choice === 'Strict' ? 'rejected' : 'accepted',
-        reason: `User chose ${choice} option`,
-        timestamp: new Date(),
-      };
-      
-      const updatedHistory = learnFromDecision(userHistory, decision);
-      setUserHistory(updatedHistory);
-      saveUserHistory(updatedHistory);
-      
-      console.log('Updated user history after decision');
-    }
-    
-    try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64: currentImageBase64,
-          userProfile: profile,
-          decision: choice,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Analysis failed');
-      }
-
-      const result: AIResponse = await response.json();
-      setAnalysisResult(result);
-      
-    } catch (err) {
-      console.error('Decision analysis failed:', err);
-      setError(err instanceof Error ? err : new Error('Analysis failed'));
     } finally {
       setIsLoading(false);
     }
@@ -201,40 +82,9 @@ function HomeContent() {
 
     console.log('Submitting clarification answer:', answer);
     
-    // Learn from clarification answer
-    if (userHistory) {
-      const decision: Decision = {
-        productType: 'clarification',
-        choice: 'accepted',
-        reason: `User clarified: ${answer}`,
-        timestamp: new Date(),
-      };
-      
-      const updatedHistory = learnFromDecision(userHistory, decision);
-      setUserHistory(updatedHistory);
-      saveUserHistory(updatedHistory);
-      
-      console.log('Updated user history after clarification');
-    }
-    
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64: currentImageBase64,
-          userProfile: profile,
-          clarification: answer,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Analysis failed');
-      }
-
-      const result: AIResponse = await response.json();
+      // Re-run client-side OCR + text-only analysis for the current image
+      const result = await analyzeClientSide(currentImageBase64, profile);
       setAnalysisResult(result);
       
     } catch (err) {
@@ -249,7 +99,6 @@ function HomeContent() {
     setStep(AppStep.SCANNER);
     setCurrentImageBase64('');
     setAnalysisResult(null);
-    setInferredIntent(null);
     setComparisonMode(false);
     setFirstProduct(null);
     setSecondProduct(null);
@@ -279,11 +128,6 @@ function HomeContent() {
 
   return (
     <div className="relative w-full h-screen bg-[#0A0A0A] overflow-hidden flex flex-col">
-      {/* Memory Indicator - Show when user has history and is on scanner or analyzing */}
-      {userHistory && (step === AppStep.SCANNER || step === AppStep.ANALYZING) && (
-        <MemoryIndicator history={userHistory} />
-      )}
-
       {/* Profile Selector - Show on scanner screen */}
       {step === AppStep.SCANNER && (
         <ProfileSelector currentProfile={profile} onProfileChange={handleProfileChange} />
@@ -291,17 +135,13 @@ function HomeContent() {
 
       {/* Main Content */}
       <AnimatePresence mode="wait">
-        {showHistory && userHistory ? (
-          <HistoryTimeline key="history" history={userHistory} onClose={() => setShowHistory(false)} />
-        ) : showOnboarding && step === AppStep.SETUP ? (
+        {showOnboarding && step === AppStep.SETUP ? (
           <SmartOnboarding key="onboarding" onComplete={handleOnboardingComplete} />
         ) : !showOnboarding && step === AppStep.SCANNER ? (
           <CameraView 
             key="scanner" 
             onScan={handleScan} 
             comparisonMode={comparisonMode}
-            onShowHistory={() => setShowHistory(true)}
-            hasHistory={userHistory !== null && userHistory.scanCount > 0}
             onBack={() => setShowOnboarding(true)}
           />
         ) : step === AppStep.ANALYZING && !secondProduct ? (
@@ -309,7 +149,6 @@ function HomeContent() {
             key="analyzing"
             data={analysisResult || {}}
             onReset={handleReset}
-            onDecision={handleDecision}
             onAnswer={handleClarificationAnswer}
             onCompare={handleStartComparison}
             profile={profile}

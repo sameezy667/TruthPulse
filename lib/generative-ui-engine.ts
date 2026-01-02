@@ -41,7 +41,7 @@ function analyzeComplexity(analysis: AIResponse): ComplexityMetrics {
   return {
     ingredientCount,
     riskLevel,
-    hasDecision: analysis.type === 'DECISION',
+    hasDecision: false, // DECISION type removed
   };
 }
 
@@ -152,39 +152,6 @@ async function* generateRiskUI(
 }
 
 /**
- * Generate UI components for DECISION response
- */
-async function* generateDecisionUI(
-  analysis: AIResponse,
-  complexity: ComplexityMetrics
-): AsyncGenerator<UIComponent> {
-  // Question text
-  if (analysis.question) {
-    yield {
-      type: 'text',
-      props: {
-        content: analysis.question,
-        size: 'large',
-        weight: 'bold',
-      },
-    };
-    
-    await delay(200);
-  }
-  
-  // Options as list
-  if (analysis.options) {
-    yield {
-      type: 'list',
-      props: {
-        items: analysis.options,
-        variant: 'interactive',
-      },
-    };
-  }
-}
-
-/**
  * Generate UI components for UNCERTAIN response
  */
 async function* generateUncertainUI(
@@ -245,12 +212,12 @@ export async function* generateUI(
       yield* generateRiskUI(analysis, complexity);
       break;
       
-    case 'DECISION':
-      yield* generateDecisionUI(analysis, complexity);
-      break;
-      
     case 'UNCERTAIN':
       yield* generateUncertainUI(analysis, complexity);
+      break;
+      
+    case 'CLARIFICATION':
+      // Clarification UI handled by ClarificationCard component
       break;
   }
 }

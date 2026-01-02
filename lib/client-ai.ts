@@ -1,79 +1,67 @@
 /**
- * Client-side AI analysis for standalone APK
- * WARNING: API key is exposed in the bundle
+ * Client-side helper to submit OCR-extracted text for server-side AI analysis
+ * 
+ * SECURITY: This module NO LONGER calls Gemini directly or uses client-side API keys.
+ * All AI analysis happens server-side via the /api/analyze-text endpoint.
+ * 
+ * Flow:
+ * 1. Client performs OCR on-device (lib/ocr.ts)
+ * 2. Client calls submitTextForAnalysis() with extracted text
+ * 3. Server receives text and uses server-only GEMINI_API_KEY
+ * 4. Server returns analysis, client renders UI
  */
 
-import { generateText } from 'ai';
-import { google } from '@ai-sdk/google';
-import { AIResponseSchema } from './schemas';
+import { AIResponse, AnalyzeTextRequest } from './schemas';
 import { UserProfile } from './types';
 
-const GEMINI_API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
-
-export async function analyzeWithAI(
-  imageBase64: string,
-  profile: UserProfile,
-  barcode?: string
-): Promise<any> {
-  if (!GEMINI_API_KEY) {
-    throw new Error('Gemini API key not configured');
+/**
+ * Submit OCR-extracted text for server-side AI analysis
+ * @param rawText - OCR-extracted text from product label
+ * @param userProfile - User dietary profile
+ * @param barcode - Optional barcode if scanned
+ * @param ocrConfidence - Optional OCR confidence score (0-100)
+ * @returns AI analysis response
+ */
+export async function submitTextForAnalysis(
+  rawText: string,
+  userProfile: UserProfile,
+  barcode?: string,
+  ocrConfidence?: number
+): Promise<AIResponse> {
+  if (!rawText || rawText.trim().length === 0) {
+    throw new Error('Text is required for analysis');
   }
 
-  const contextMap = {
-    [UserProfile.VEGAN]: 'strict vegan (no animal products)',
-    [UserProfile.DIABETIC]: 'diabetic (low sugar, low glycemic index)',
-    [UserProfile.PALEO]: 'paleo diet (no grains, legumes, or dairy)',
+  const payload: AnalyzeTextRequest = {
+    rawText: rawText.trim(),
+    userProfile,
+    barcode,
+    ocrConfidence,
   };
 
-  const userContext = contextMap[profile];
-
-  const prompt = `You are analyzing a food product label for someone who follows a ${userContext} diet.
-
-${barcode ? `Product barcode: ${barcode}` : ''}
-
-Analyze the image and provide:
-1. Product name
-2. Whether it's SAFE, CAUTION, or UNSAFE for this diet
-3. Key concerns (if any)
-4. Specific problematic ingredients (if any)
-5. A brief explanation
-
-Return ONLY valid JSON matching this schema:
-{
-  "productName": "string",
-  "verdict": "SAFE" | "CAUTION" | "UNSAFE",
-  "concerns": ["string"],
-  "problematicIngredients": ["string"],
-  "explanation": "string"
-}`;
-
   try {
-    const result = await generateText({
-      model: google('gemini-2.0-flash-exp'),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            {
-              type: 'image',
-              image: imageBase64,
-            },
-          ],
-        },
-      ],
-      maxRetries: 3,
+    const response = await fetch('/api/analyze-text', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000), // 30 second timeout
     });
 
-    const jsonMatch = result.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}: ${response.statusText}`);
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
-    return AIResponseSchema.parse(parsed);
+    const data = await response.json();
+    return data as AIResponse;
   } catch (error: any) {
-    console.error('Client AI analysis error:', error);
-    throw new Error(`AI analysis failed: ${error.message}`);
+    console.error('Failed to submit text for analysis:', error);
+    
+    // Return friendly error response
+    return {
+      type: 'UNCERTAIN',
+      rawText: `Failed to analyze text: ${error.message || 'Network error'}. Please check your connection and try again.`,
+    };
   }
 }
